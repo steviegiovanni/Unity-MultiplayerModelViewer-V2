@@ -838,8 +838,23 @@ namespace ModelViewer
 			//Vector3 oriPosRelativeToCage = node.P0 - CagePos;
 			Vector3 oriPosAfterSetup = this.transform.TransformPoint(node.P0);
 			if (Vector3.Distance (node.GameObject.transform.position,oriPosAfterSetup) < SnapThreshold) {
-                node.GameObject.transform.position = oriPosAfterSetup;
-                node.GameObject.transform.rotation = this.transform.rotation * node.R0;
+                List<Vector3> childPos = new List<Vector3>();
+                List<Quaternion> childRot = new List<Quaternion>();
+                foreach (Transform child in node.GameObject.transform)
+                {
+                    childPos.Add(child.position);
+                    childRot.Add(child.rotation);
+                }
+
+
+                node.GameObject.transform.SetPositionAndRotation(oriPosAfterSetup, this.transform.rotation * node.R0);
+
+                int i = 0;
+                foreach (Transform child in node.GameObject.transform)
+                {
+                    child.SetPositionAndRotation(childPos[i], childRot[i]);
+                    i++;
+                }
 
                 if (DeselectOnSnapped)
                 {
