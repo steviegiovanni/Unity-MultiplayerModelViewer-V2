@@ -261,7 +261,7 @@ namespace ModelViewer
 
         public IEnumerator TaskListCoroutine()
         {
-            while(CurrentTaskId != Tasks.Count)
+            while (CurrentTaskId != Tasks.Count)
             {
 
                 if (CurrentTaskId == -1)
@@ -300,10 +300,17 @@ namespace ModelViewer
                     Destroy(Hint);
 
                 // run task event coroutine if exists
-                if (task.TaskEvent != null)
-                    yield return StartCoroutine(task.TaskEvent.TaskEventCoroutine());
+                /*if (task.TaskEvent != null)
+                {
+                    //yield return StartCoroutine(task.TaskEvent.TaskEventCoroutine());
+                    StartCoroutine(task.TaskEvent.TaskEventCoroutine());
+                }*/
+                foreach (var taskEvent in task.TaskEvents)
+                    StartCoroutine(taskEvent.TaskEventCoroutine());
 
-                yield return null;
+                yield return new WaitForSeconds(task.TaskDelay);
+
+                //yield return null;
             }
 
             TaskStartListeners.Invoke(null);

@@ -307,6 +307,20 @@ namespace Multiplayer
             MPO.GrabIfPointingAt();
         }
 
+        [PunRPC]
+        void ResetRPC(PhotonMessageInfo info)
+        {
+            TaskList.Reset();
+        }
+
+        public void ResetTask()
+        {
+            if (!photonView.isMine && PhotonNetwork.connected)
+                photonView.RPC("ResetRPC", PhotonTargets.AllViaServer);
+            else
+                TaskList.Reset();
+        }
+
         public void Release() {
             MPO.Release();
         }
