@@ -12,6 +12,8 @@ namespace Multiplayer
     /// </summary>
     public class MultiuserMPOInterface : Photon.PunBehaviour, IPunObservable
     {
+        public GameObject worldAnchor;
+
         /// <summary>
         /// the multiparts object associated with this interface
         /// </summary>
@@ -84,7 +86,7 @@ namespace Multiplayer
             }
         }
 
-        
+
 
         /// <summary>
         /// - synchronize the current task id
@@ -99,16 +101,18 @@ namespace Multiplayer
                 stream.SendNext(TaskList.CurrentTaskId);
 
                 // send owner ids
-                int [] ownerIdsArray = OwnerIds.ToArray();
+                int[] ownerIdsArray = OwnerIds.ToArray();
                 stream.SendNext(ownerIdsArray);
-                
+
                 // send positionas and rotations
                 Vector3[] positions = new Vector3[Nodes.Count];
                 Quaternion[] rotations = new Quaternion[Nodes.Count];
-                for(int i=0; i < Nodes.Count; i++)
+                for (int i = 0; i < Nodes.Count; i++)
                 {
-                    positions[i] = Nodes[i].GameObject.transform.position;
-                    rotations[i] = Nodes[i].GameObject.transform.rotation;
+                    positions[i] = worldAnchor.transform.InverseTransformPoint(Nodes[i].GameObject.transform.position);
+                    //positions[i] = Nodes[i].GameObject.transform.position;
+                    rotations[i] = Quaternion.Inverse(worldAnchor.transform.rotation) * Nodes[i].GameObject.transform.rotation;
+                    //rotations[i] = Nodes[i].GameObject.transform.rotation;
                 }
 
                 stream.SendNext(positions);
@@ -130,7 +134,7 @@ namespace Multiplayer
                 for (int i = 0; i < Nodes.Count; i++)
                 {
                     if (ownerIdsArray[i] != PhotonNetwork.player.ID || ownerIdsArray[i] == -1)
-                        Nodes[i].GameObject.transform.SetPositionAndRotation(positions[i], rotations[i]);
+                        Nodes[i].GameObject.transform.SetPositionAndRotation(worldAnchor.transform.TransformPoint(positions[i]), worldAnchor.transform.rotation * rotations[i]);
                 }
             }
         }
@@ -141,7 +145,7 @@ namespace Multiplayer
         public override void OnOwnershipRequest(object[] viewAndPlayer)
         {
             //MPO.ReleaseCage();
-            
+
             if (photonView.isMine)
             {
                 PhotonView view = viewAndPlayer[0] as PhotonView;
@@ -155,6 +159,14 @@ namespace Multiplayer
         {
             TaskList.OnTaskFinished.RemoveAllListeners();
             TaskList.OnTaskFinished.AddListener(IncrementTaskId);
+        }
+
+        private bool waiting = false;
+        private IEnumerator Wait()
+        {
+            waiting = true;
+            yield return new WaitForSeconds(0.1f);
+            waiting = false;
         }
 
         // Update is called once per frame
@@ -193,20 +205,38 @@ namespace Multiplayer
 
             if (PhotonNetwork.connected)
             {
-                if (!PhotonNetwork.isMasterClient)
+                if (!PhotonNetwork.isMasterClient && !waiting)
                 {
+                    List<int> ids = new List<int>();
+                    List<Vector3> positions = new List<Vector3>();
+                    List<Quaternion> rotations = new List<Quaternion>();
+
                     for (int i = 0; i < Nodes.Count; i++)
                     {
                         if (OwnerIds[i] == PhotonNetwork.player.ID)
-                            photonView.RPC("UpdateNodeTransform", PhotonTargets.MasterClient, i, Nodes[i].GameObject.transform.position, Nodes[i].GameObject.transform.rotation);
+                        {
+                            Vector3 position = worldAnchor.transform.InverseTransformPoint(Nodes[i].GameObject.transform.position);
+                            Quaternion rotation = Quaternion.Inverse(worldAnchor.transform.rotation) * Nodes[i].GameObject.transform.rotation;
+                            ids.Add(i);
+                            positions.Add(position);
+                            rotations.Add(rotation);
+                        }
+                    }
+
+                    if (ids.Count > 0)
+                    {
+                        photonView.RPC("UpdateNodeTransforms", PhotonTargets.MasterClient, ids.ToArray(), positions.ToArray(), rotations.ToArray());
+                        //photonView.RPC("UpdateNodeTransform", PhotonTargets.MasterClient, i, position, rotation);
+                        //photonView.RPC("UpdateNodeTransform", PhotonTargets.MasterClient, i, Nodes[i].GameObject.transform.position, Nodes[i].GameObject.transform.rotation);
+                        StartCoroutine(Wait());
                     }
                 }
             }
 
             // enables tasks associated with the node that we own and disables the ones we don't own
-            for(int j = 0; j < OwnerIds.Count; j++)
+            for (int j = 0; j < OwnerIds.Count; j++)
             {
-                foreach(var task in TaskList.Tasks)
+                foreach (var task in TaskList.Tasks)
                 {
                     if (task.GameObject == Nodes[j].GameObject)
                         task.Enabled = (OwnerIds[j] == PhotonNetwork.player.ID);
@@ -219,20 +249,46 @@ namespace Multiplayer
         {
             List<Vector3> childPos = new List<Vector3>();
             List<Quaternion> childRot = new List<Quaternion>();
-            foreach(Transform child in Nodes[nodeId].GameObject.transform)
+            foreach (Transform child in Nodes[nodeId].GameObject.transform)
             {
                 childPos.Add(child.position);
                 childRot.Add(child.rotation);
             }
 
-
-            Nodes[nodeId].GameObject.transform.SetPositionAndRotation(position, rotation);
+            //Nodes[nodeId].GameObject.transform.SetPositionAndRotation(position, rotation);
+            Nodes[nodeId].GameObject.transform.SetPositionAndRotation(worldAnchor.transform.TransformPoint(position), worldAnchor.transform.rotation * rotation);
 
             int i = 0;
             foreach (Transform child in Nodes[nodeId].GameObject.transform)
             {
-                child.SetPositionAndRotation(childPos[i],childRot[i]);
+                child.SetPositionAndRotation(childPos[i], childRot[i]);
                 i++;
+            }
+        }
+
+        [PunRPC]
+        void UpdateNodeTransforms(int[] nodeIds, Vector3[] positions, Quaternion[] rotations, PhotonMessageInfo info)
+        {
+            for (int i = 0; i < nodeIds.Length; i++)
+            {
+                List<Vector3> childPos = new List<Vector3>();
+                List<Quaternion> childRot = new List<Quaternion>();
+
+                foreach (Transform child in Nodes[nodeIds[i]].GameObject.transform)
+                {
+                    childPos.Add(child.position);
+                    childRot.Add(child.rotation);
+                }
+
+                //Nodes[nodeId].GameObject.transform.SetPositionAndRotation(position, rotation);
+                Nodes[nodeIds[i]].GameObject.transform.SetPositionAndRotation(worldAnchor.transform.TransformPoint(positions[i]), worldAnchor.transform.rotation * rotations[i]);
+
+                int j = 0;
+                foreach (Transform child in Nodes[nodeIds[i]].GameObject.transform)
+                {
+                    child.SetPositionAndRotation(childPos[j], childRot[j]);
+                    j++;
+                }
             }
         }
 
@@ -250,7 +306,7 @@ namespace Multiplayer
 
         public void IncrementTaskId()
         {
-            if(!photonView.isMine && PhotonNetwork.connected)
+            if (!photonView.isMine && PhotonNetwork.connected)
                 photonView.RPC("IncrementTaskIdRPC", PhotonTargets.MasterClient);
             else
                 TaskList.IncrementTaskId();
@@ -288,13 +344,13 @@ namespace Multiplayer
         public void Grab()
         {
             // take ownership of each of the selected node
-            foreach(var node in MPO.SelectedNodes)
+            foreach (var node in MPO.SelectedNodes)
             {
                 int i = 0;
                 while (Nodes[i] != node)
                     i++;
 
-                if(PhotonNetwork.connected)
+                if (PhotonNetwork.connected)
                     photonView.RPC("GrabNode", PhotonTargets.MasterClient, i);
 
                 //if (!node.GameObject.GetComponent<MultiuserMPOPartInterface>().photonView.isMine)
@@ -321,7 +377,8 @@ namespace Multiplayer
                 TaskList.Reset();
         }
 
-        public void Release() {
+        public void Release()
+        {
             MPO.Release();
         }
     }
