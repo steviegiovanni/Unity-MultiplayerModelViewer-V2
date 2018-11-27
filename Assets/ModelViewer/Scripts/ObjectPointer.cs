@@ -25,6 +25,16 @@ namespace ModelViewer
     /// </summary>
     public class ObjectPointer : MonoBehaviour
     {
+		/// <summary>
+        /// length of ray
+        /// </summary>
+        [SerializeField]
+        private float _length = Mathf.Infinity;
+        public float Length {
+            get { return _length; }
+            set { _length = value; }
+        }
+		
         /// <summary>
         /// the instance of an object pointer
         /// </summary>
@@ -145,7 +155,7 @@ namespace ModelViewer
                 ray = Ray.GetRay();
 
             // raycast to get hitInfo
-            if (Physics.Raycast(ray, out _hitInfo, Mathf.Infinity, Physics.DefaultRaycastLayers))
+            if (Physics.Raycast(ray, out _hitInfo, Length, Physics.DefaultRaycastLayers))
             {
                 if (OnHoverEvent != null)
                     OnHoverEvent.Invoke(_hitInfo.collider.gameObject);
