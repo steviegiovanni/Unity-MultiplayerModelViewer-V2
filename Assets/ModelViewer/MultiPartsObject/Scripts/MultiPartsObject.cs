@@ -12,6 +12,16 @@ namespace ModelViewer
     /// </summary>
     public class Node
     {
+		/// <summary>
+        /// description of the part
+        /// </summary>
+        private string _description;
+        public string Description
+        {
+            get { return _description; }
+            set { _description = value; }
+        }
+		
         /// <summary>
         /// store the name of the game object so that we can search for the go based on name if we switch the model
         /// </summary>
@@ -203,6 +213,7 @@ namespace ModelViewer
             Locked = sn.Locked;
             Name = sn.Name;
             GOName = sn.GOName;
+			Description = sn.Description;
         }
 
         /// <summary>
@@ -241,6 +252,7 @@ namespace ModelViewer
         public bool Locked;
         public string Name;
         public string GOName;
+		public string Description;
     }
 
     /// <summary>
@@ -969,7 +981,8 @@ namespace ModelViewer
                 Material = Root.Material,
                 Locked = Root.Locked,
                 Name = Root.Name,
-                GOName = Root.GOName
+                GOName = Root.GOName,
+				Description = Root.Description
             };
             serializedNodes.Add(serializedRoot);
 
@@ -995,7 +1008,8 @@ namespace ModelViewer
                         Material = child.Material,
                         Locked = child.Locked,
                         Name = child.Name,
-                        GOName = child.GOName
+                        GOName = child.GOName,
+						Description = child.Description
                     };
                     serializedNodes.Add(serializedNode);
                     nCousins += child.Childs.Count;
