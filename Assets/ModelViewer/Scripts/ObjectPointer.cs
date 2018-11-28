@@ -175,7 +175,7 @@ namespace ModelViewer
                     if (HitInfo.collider != null)
                         LR.SetPosition(1, HitInfo.point);
                     else
-                        LR.SetPosition(1, ray.origin + ray.direction * 100f);
+                        LR.SetPosition(1, ray.origin + ray.direction * Length);
                 }
                 else
                 {
