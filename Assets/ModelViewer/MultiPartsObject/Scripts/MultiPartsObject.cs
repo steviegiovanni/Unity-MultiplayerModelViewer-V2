@@ -702,6 +702,22 @@ namespace ModelViewer
         }
 
         /// <summary>
+        /// deselect all selected parts
+        /// </summary>
+        public void DeselectAll()
+        {
+            for (int i = SelectedNodes.Count - 1; i >= 0; i--)
+            {
+                SelectedNodes[i].Selected = false;
+                if (SelectedNodes[i].HasMesh)
+                {
+                    SelectedNodes[i].GameObject.GetComponent<Renderer>().material = SelectedNodes[i].Material;
+                }
+                SelectedNodes.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
         /// deselect a node that contains the game object pointed by the objectpointer
         /// </summary>
         public void Deselect()
