@@ -39,4 +39,6 @@ MonoBehaviour:
   - GrabNode
   - IncrementTaskIdRPC
   - UpdateNodeTransform
+  - ResetRPC
+  - UpdateNodeTransforms
   DisableAutoOpenWizard: 1

@@ -660,6 +660,14 @@ namespace ModelViewer
         }
 
         /// <summary>
+        /// reset without input
+        /// </summary>
+        public void Reset()
+        {
+            ResetAll(Root);
+        }
+
+        /// <summary>
         /// select a node that contains the game object pointed by the objectpointer
         /// </summary>
         public void Select()
