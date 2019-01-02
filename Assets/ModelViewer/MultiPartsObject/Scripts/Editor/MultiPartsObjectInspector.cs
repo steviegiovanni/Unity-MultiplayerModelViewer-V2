@@ -169,7 +169,8 @@ namespace ModelViewer
                     GUILayout.Label("Description", GUILayout.Width(100));
                     GUILayout.EndHorizontal();
                     GUILayout.BeginHorizontal();
-                    node.Description = GUILayout.TextArea(node.Description, GUILayout.Height(100));
+                    EditorStyles.textField.wordWrap = true;
+                    node.Description = EditorGUILayout.TextArea(node.Description, GUILayout.Height(100));
                     GUILayout.EndHorizontal();
 
                     // allows to change the game object of the node
