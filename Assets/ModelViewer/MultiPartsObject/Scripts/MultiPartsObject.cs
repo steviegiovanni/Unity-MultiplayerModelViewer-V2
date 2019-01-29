@@ -237,7 +237,7 @@ namespace ModelViewer
     /// structure used to store node data for serialization
     /// </summary>
     [System.Serializable]
-    public struct SerializableNode
+    public class SerializableNode
     {
         public int ChildCount;
         public int IndexOfFirstChild;
@@ -1014,14 +1014,12 @@ namespace ModelViewer
             while(toProcess.Count > 0)
             {
                 Node n = toProcess[0];
-                int nCousins = 0;
                 int childid = 0;
                 foreach(var child in n.Childs)
                 {
                     var serializedNode = new SerializableNode()
                     {
                         ChildCount = child.Childs.Count,
-                        IndexOfFirstChild = serializedNodes.Count + n.Childs.Count - childid + nCousins,
                         GameObject = child.GameObject,
                         HasMesh = child.HasMesh,
                         indexOfParent = parentId,
@@ -1036,7 +1034,8 @@ namespace ModelViewer
 						Description = child.Description
                     };
                     serializedNodes.Add(serializedNode);
-                    nCousins += child.Childs.Count;
+                    if (childid == 0)
+                        serializedNodes[serializedNode.indexOfParent].IndexOfFirstChild = serializedNodes.Count - 1;
                     childid++;
                     toProcess.Add(child);
                 }
